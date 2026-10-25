@@ -1,0 +1,24 @@
+{
+  "name": "envelope",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Envelope: an autonomous trading agent that cannot break its signed risk mandate. Hash-chained trade ledger on HSK Chain.",
+  "license": "MIT",
+  "scripts": {
+    "introspect": "tsx scripts/introspect.ts",
+    "wallet": "tsx scripts/wallet.ts",
+    "fork": "hardhat node --config contracts/hardhat.config.ts",
+    "test": "pnpm --filter @envelope/contracts test",
+    "agent": "pnpm --filter @envelope/agent dev",
+    "web": "pnpm --filter @envelope/web dev",
+    "dev": "concurrently -n agent,web -c cyan,magenta \"pnpm agent\" \"pnpm web\"",
+    "demo": "bash scripts/demo.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "viem": "^2.21.54"
+  }
+}

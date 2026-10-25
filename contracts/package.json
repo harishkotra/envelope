@@ -1,0 +1,20 @@
+{
+  "name": "@envelope/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:fork": "hardhat run scripts/deploy.ts --network fork",
+    "deploy:mainnet": "hardhat run scripts/deploy.ts --network hsk",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/deploy-local.ts --network fork"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.17",
+    "@openzeppelin/contracts": "^5.1.0",
+    "dotenv": "^16.4.7"
+  }
+}

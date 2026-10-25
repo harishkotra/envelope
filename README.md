@@ -15,25 +15,25 @@ Built for the **HashKey Chain Horizon Hackathon (India, Mumbai edition)**, Track
 
 ## Proof of work
 
-Every transaction below is real, on HSK Chain testnet. Explorer base: `https://testnet-explorer.hsk.xyz`.
+Every transaction below is real, on HSK Chain testnet. Explorer base: `https://testnet-explorer.hskchain.net`.
 
 ### Deployed contracts
 
 | Contract | Address | Purpose |
 |---|---|---|
-| `RiskEnvelope` | [`0x7b67AAd8eB08eF74EFe101325600B16dc5f95FFa`](https://testnet-explorer.hsk.xyz/address/0x7b67AAd8eB08eF74EFe101325600B16dc5f95FFa) | Signed EIP-712 risk mandate, enforced against live reserves |
-| `EnvelopeTrader` | [`0xECf9c42e8beFB1b9508B9430D536BB369F7F9246`](https://testnet-explorer.hsk.xyz/address/0xECf9c42e8beFB1b9508B9430D536BB369F7F9246) | The only address that can move funds |
-| `TradeLedger` | [`0xD41eF582Cf592D7B67803864c271519fCbF620ac`](https://testnet-explorer.hsk.xyz/address/0xD41eF582Cf592D7B67803864c271519fCbF620ac) | Append-only hash chain of decisions |
-| Venue (`MiniDEX`) | [`0x048475cf2731ff2c032c7938d3e358eeeb6cc4a4`](https://testnet-explorer.hsk.xyz/address/0x048475cf2731ff2c032c7938d3e358eeeb6cc4a4) | Factory and router, Uniswap V2 surface |
-| Pool (WHSK/dUSD) | [`0xA92D72d226cb655C1D25bDf2690d5E3D9Be26da6`](https://testnet-explorer.hsk.xyz/address/0xA92D72d226cb655C1D25bDf2690d5E3D9Be26da6) | Seeded 20 WHSK against 2 dUSD |
-| WHSK | [`0xf0F96c100e7A218aCFF1A6b3d069e288a3fa7269`](https://testnet-explorer.hsk.xyz/address/0xf0F96c100e7A218aCFF1A6b3d069e288a3fa7269) | Base asset, 18 decimals |
-| dUSD | [`0x0741DE74e8A69dB4B5Ef569e6f0d88812cA0672d`](https://testnet-explorer.hsk.xyz/address/0x0741DE74e8A69dB4B5Ef569e6f0d88812cA0672d) | Quote asset, 6 decimals |
+| `RiskEnvelope` | [`0x7b67AAd8eB08eF74EFe101325600B16dc5f95FFa`](https://testnet-explorer.hskchain.net/address/0x7b67AAd8eB08eF74EFe101325600B16dc5f95FFa) | Signed EIP-712 risk mandate, enforced against live reserves |
+| `EnvelopeTrader` | [`0xECf9c42e8beFB1b9508B9430D536BB369F7F9246`](https://testnet-explorer.hskchain.net/address/0xECf9c42e8beFB1b9508B9430D536BB369F7F9246) | The only address that can move funds |
+| `TradeLedger` | [`0xD41eF582Cf592D7B67803864c271519fCbF620ac`](https://testnet-explorer.hskchain.net/address/0xD41eF582Cf592D7B67803864c271519fCbF620ac) | Append-only hash chain of decisions |
+| Venue (`MiniDEX`) | [`0x048475cf2731ff2c032c7938d3e358eeeb6cc4a4`](https://testnet-explorer.hskchain.net/address/0x048475cf2731ff2c032c7938d3e358eeeb6cc4a4) | Factory and router, Uniswap V2 surface |
+| Pool (WHSK/dUSD) | [`0xA92D72d226cb655C1D25bDf2690d5E3D9Be26da6`](https://testnet-explorer.hskchain.net/address/0xA92D72d226cb655C1D25bDf2690d5E3D9Be26da6) | Seeded 20 WHSK against 2 dUSD |
+| WHSK | [`0xf0F96c100e7A218aCFF1A6b3d069e288a3fa7269`](https://testnet-explorer.hskchain.net/address/0xf0F96c100e7A218aCFF1A6b3d069e288a3fa7269) | Base asset, 18 decimals |
+| dUSD | [`0x0741DE74e8A69dB4B5Ef569e6f0d88812cA0672d`](https://testnet-explorer.hskchain.net/address/0x0741DE74e8A69dB4B5Ef569e6f0d88812cA0672d) | Quote asset, 6 decimals |
 
 ### Wallet
 
 | Role | Address |
 |---|---|
-| Deployer, executor, current envelope owner | [`0x696e224Ff058656cF337c72eeDCF7C2b24aD96Ce`](https://testnet-explorer.hsk.xyz/address/0x696e224Ff058656cF337c72eeDCF7C2b24aD96Ce) |
+| Deployer, executor, current envelope owner | [`0x696e224Ff058656cF337c72eeDCF7C2b24aD96Ce`](https://testnet-explorer.hskchain.net/address/0x696e224Ff058656cF337c72eeDCF7C2b24aD96Ce) |
 
 That key lives only in `~/envelope/.env`, mode 600, gitignored, never committed. It is a testnet key. Ownership can be handed to any EIP-1193 wallet with `pnpm --filter @envelope/contracts handoff`, after which the deploy key can no longer install a mandate.
 
@@ -41,18 +41,20 @@ That key lives only in `~/envelope/.env`, mode 600, gitignored, never committed.
 
 | What it proves | Transaction |
 |---|---|
-| Protocol deployed (`RiskEnvelope`, 1.51M gas) | [`0x2b768c38…ab82874`](https://testnet-explorer.hsk.xyz/tx/0x2b768c3866afd4fe998f90a358db8a77bd573abdfb63792f9075c62deab82874) |
-| Venue deployed and pair created | [`0xd1a9627d…63a6a41`](https://testnet-explorer.hsk.xyz/tx/0xd1a9627d287a9fd43d001617031f53a1e106cc561f5999c6ad5b7e6a163a6a41) |
-| Mandate v1 signed and installed | [`0x1ec17966…e583b`](https://testnet-explorer.hsk.xyz/tx/0x1ec17966688df7e427ecdcfd9b9b7b345765e743506e536114900966277e583b) |
-| Mandate v2, rewritten by the operator | [`0xb4155d33…5c573`](https://testnet-explorer.hsk.xyz/tx/0xb4155d3328e7fa977275337d05c192285eb119726e2c4e4afe52185dd435c573) |
-| A trade the agent was allowed to take (status 1) | [`0x64b843c3…39f7a9`](https://testnet-explorer.hsk.xyz/tx/0x64b843c399818856419f6f3e06fda2534d4b15b4dc11c647ab4dbd2e2b39f7a9) |
-| **An order the chain refused** (status 0, `NotionalExceeded(600000, 150000)`) | [`0x17537070…d478712`](https://testnet-explorer.hsk.xyz/tx/0x17537070a513d5dd38c29eedc031470c3226914906ee194e8a3d7b40ed478712) |
+| Protocol deployed (`RiskEnvelope`, 1.51M gas) | [`0x2b768c38…ab82874`](https://testnet-explorer.hskchain.net/tx/0x2b768c3866afd4fe998f90a358db8a77bd573abdfb63792f9075c62deab82874) |
+| Venue deployed and pair created | [`0xd1a9627d…63a6a41`](https://testnet-explorer.hskchain.net/tx/0xd1a9627d287a9fd43d001617031f53a1e106cc561f5999c6ad5b7e6a163a6a41) |
+| Mandate v1 signed and installed | [`0x1ec17966…e583b`](https://testnet-explorer.hskchain.net/tx/0x1ec17966688df7e427ecdcfd9b9b7b345765e743506e536114900966277e583b) |
+| Mandate v2, rewritten by the operator | [`0xb4155d33…5c573`](https://testnet-explorer.hskchain.net/tx/0xb4155d3328e7fa977275337d05c192285eb119726e2c4e4afe52185dd435c573) |
+| A trade the agent was allowed to take (status 1) | [`0x64b843c3…39f7a9`](https://testnet-explorer.hskchain.net/tx/0x64b843c399818856419f6f3e06fda2534d4b15b4dc11c647ab4dbd2e2b39f7a9) |
+| **An order the chain refused** (status 0, `NotionalExceeded(600000, 150000)`) | [`0x17537070…d478712`](https://testnet-explorer.hskchain.net/tx/0x17537070a513d5dd38c29eedc031470c3226914906ee194e8a3d7b40ed478712) |
 
 Verify the last one yourself: the receipt status is `0`. The transaction was sent by the agent, mined, and reverted by the envelope. Nothing in the UI prevented it.
 
 ### Verify it without trusting this README
 
-The documented testnet explorer (`https://testnet-explorer.hsk.xyz`) has been intermittently unreachable since deployment, so the proof does not depend on it. Everything below reads straight from the RPC:
+The explorer URL printed in the HSK docs (`https://testnet-explorer.hsk.xyz`) returns 404 for chain 133 addresses. The working indexer for this chain is the one registered in [`ethereum-lists/chains`](https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-133.json): **`https://testnet-explorer.hskchain.net`**. Every link in this README uses that host and was checked against its API.
+
+The proof does not depend on any explorer. Everything below reads straight from the RPC:
 
 ```bash
 bash scripts/verify-proof.sh
@@ -388,7 +390,7 @@ Three things to try:
 NETWORK=testnet
 CHAIN_ID=133
 RPC_URL=https://testnet.hsk.xyz
-EXPLORER_URL=https://testnet-explorer.hsk.xyz
+EXPLORER_URL=https://testnet-explorer.hskchain.net
 ```
 
 ```bash
@@ -490,6 +492,7 @@ bash scripts/demo.sh       # full local stack
 |---|---|
 | `pnpm test` | Contract suite on an HSK mainnet fork |
 | `bash scripts/verify-proof.sh` | Check every proof claim straight from the chain |
+| `bash scripts/check-links.sh` | Assert every explorer link in the docs is really indexed |
 | `pnpm demo` | Chain, deploy, agent and desk in one command |
 | `pnpm --filter @envelope/contracts deploy:testnet` | Full testnet deployment |
 | `pnpm --filter @envelope/contracts handoff` | Give envelope ownership to a wallet |

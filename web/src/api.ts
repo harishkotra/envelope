@@ -172,7 +172,7 @@ const CHAINS: { [chainId: number]: { name: string; rpc: string; explorer: string
   133: {
     name: 'HSK Chain Testnet',
     rpc: 'https://testnet.hsk.xyz',
-    explorer: 'https://testnet-explorer.hsk.xyz',
+    explorer: 'https://testnet-explorer.hskchain.net',
     symbol: 'HSK',
   },
   177: {

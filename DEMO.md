@@ -10,7 +10,7 @@ Demo Day: Nov 4, Mumbai. 20 finalists, roughly 12 minutes per team including han
 - [ ] Hard refresh the page once so the sparkline has history.
 - [ ] Backup: a screen recording of the exact run, in case the venue wifi dies.
 - [ ] MetaMask installed and switched to the chain the desk is on, so the ownership beat works live.
-- [ ] Testnet contracts open in another tab: `https://testnet-explorer.hsk.xyz/address/0x7b67AAd8eB08eF74EFe101325600B16dc5f95FFa`
+- [ ] Testnet contracts open in another tab: `https://testnet-explorer.hskchain.net/address/0x7b67AAd8eB08eF74EFe101325600B16dc5f95FFa`
 - [ ] Mainnet deployment link ready too: a mainnet contract is required to be eligible for demo selection.
 
 ## The five minutes

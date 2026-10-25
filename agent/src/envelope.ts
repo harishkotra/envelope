@@ -246,9 +246,13 @@ export const trade = async (intent: Intent, decisionHash: Hex, opts: { simulate:
         account: executor.account!,
       });
     } catch (simulated) {
+      // keep the hash so a refused order still has an explorer link
+      (simulated as Record<string, unknown>).txHash = hash;
       throw simulated;
     }
-    throw new Error(`trade reverted on chain in ${hash}`);
+    const reverted = new Error(`trade reverted on chain in ${hash}`) as Error & { txHash?: string };
+    reverted.txHash = hash;
+    throw reverted;
   }
 
   return { hash, receipt, simulated: false as const };

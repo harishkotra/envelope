@@ -1,12 +1,55 @@
-node_modules/
+# ---- secrets (never commit) ----
 .env
-.env.local
+.env.*
+!.env.example
+
+# ---- installs ----
+node_modules/
+.pnpm-store/
+.yarn/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- builds and caches ----
 dist/
-artifacts/
-cache/
-coverage/
-.DS_Store
-*.log
 web/dist/
 agent/dist/
+artifacts/
+contracts/artifacts/
+cache/
+contracts/cache/
 contracts/typechain-types/
+*.tsbuildinfo
+.vite/
+.cache/
+
+# ---- chain and agent runtime state ----
+# decision records belong to a specific chain and a specific wallet; the testnet
+# deployment's records are reproducible with `deploy:testnet` + running the agent
+agent/data/
+*.jsonl
+contracts/deployments/local.json
+contracts/deployments/testnet-rehearsal.json
+
+# ---- reports and local output ----
+coverage/
+coverage.json
+*.lcov
+screenshots/
+*.png
+*.jpg
+!docs/*.png
+
+# ---- editors and OS ----
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---- misc ----
+*.log
+tmp/
+.tmp/

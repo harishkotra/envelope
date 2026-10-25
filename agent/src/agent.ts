@@ -213,10 +213,12 @@ export const runCycle = async (
       } catch {
         anchoredHash = undefined;
       }
+      // the reverted trade is the proof the chain refused it, so prefer that hash
+      const revertedHash = (error as Record<string, unknown> | undefined)?.txHash as string | undefined;
       const updated = updateRecord(record.id, {
         outcome: 'BREACH_REVERTED',
         error: decoded,
-        txHash: anchoredHash,
+        txHash: revertedHash ?? anchoredHash,
       });
       return { record: updated! };
     }
@@ -275,6 +277,7 @@ export const breakEnvelope = async (sizePct = 400) => {
       outcome: 'BREACH_REVERTED',
       preimage,
       reasoning: 'Operator override attempted outside the mandate.',
+      txHash: (error as Record<string, unknown> | undefined)?.txHash as string | undefined,
       proposal: { action: 'BUY', sizePct, confidence: 1, thesis: preimage.thesis, riskFlags: ['operator_override'] },
       model: 'operator-override',
       usedFallback: false,
@@ -282,7 +285,7 @@ export const breakEnvelope = async (sizePct = 400) => {
       tokens: 0,
       error: decoded,
     });
-    return { breached: true, decisionHash, preimage, error: decoded };
+    return { breached: true, decisionHash, preimage, error: decoded, txHash: (error as Record<string, unknown> | undefined)?.txHash };
   }
 };
 

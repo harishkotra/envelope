@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { CONFIG, DEPLOYMENT } from './config.js';
-import { readMandate, readPosition, extractRevert } from './envelope.js';
+import { readMandate, readPosition, extractRevert, prepareMandate, submitMandate, readOwner, type Mandate } from './envelope.js';
 import { snapshot, priceSeries } from './market.js';
 import { allRecords, findRecord } from './store.js';
 import { applyChatPatch, breakEnvelope, interpretChat, runCycle } from './agent.js';
@@ -250,6 +250,83 @@ app.post('/api/mandate', async (req, res) => {
 
 app.post('/api/start', (_req, res) => res.json(startLoop()));
 app.post('/api/stop', (_req, res) => res.json(stopLoop()));
+
+/** Who is allowed to sign a mandate, and which chain the desk is on. */
+app.get('/api/wallet', async (_req, res) => {
+  try {
+    const owner = await readOwner();
+    res.json({
+      owner,
+      chainId: CONFIG.chainId,
+      network: CONFIG.network,
+      envelope: DEPLOYMENT.envelope,
+    });
+  } catch (error) {
+    res.status(500).json({ error: extractRevert(error) });
+  }
+});
+
+/**
+ * Build the next mandate and hand back EIP-712 typed data.
+ * The browser wallet signs it. The agent cannot produce this signature.
+ */
+app.post('/api/mandate/prepare', async (req, res) => {
+  try {
+    const patch = req.body?.patch ?? req.body ?? {};
+    const prepared = await prepareMandate(patch);
+    res.json({
+      owner: prepared.owner,
+      typedData: prepared.typedData,
+      mandate: {
+        ...prepared.mandate,
+        maxNotionalQuote: prepared.mandate.maxNotionalQuote.toString(),
+        expiry: prepared.mandate.expiry.toString(),
+        nonce: prepared.mandate.nonce.toString(),
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ error: extractRevert(error) });
+  }
+});
+
+/** Relay a wallet-signed mandate. The contract checks the signature, not the sender. */
+app.post('/api/mandate/submit', async (req, res) => {
+  try {
+    const raw = req.body?.mandate;
+    const signature = req.body?.signature;
+    if (!raw || !signature) return res.status(400).json({ error: 'mandate and signature required' });
+
+    const mandate: Mandate = {
+      account: raw.account,
+      executor: raw.executor,
+      pair: raw.pair,
+      baseToken: raw.baseToken,
+      quoteToken: raw.quoteToken,
+      maxPositionBps: Number(raw.maxPositionBps),
+      maxDailyLossBps: Number(raw.maxDailyLossBps),
+      maxSlippageBps: Number(raw.maxSlippageBps),
+      maxTradesPerHour: Number(raw.maxTradesPerHour),
+      maxNotionalQuote: BigInt(raw.maxNotionalQuote),
+      expiry: BigInt(raw.expiry),
+      nonce: BigInt(raw.nonce),
+    };
+
+    const result = await submitMandate(mandate, signature);
+    res.json({
+      ok: true,
+      txHash: result.txHash,
+      blockNumber: result.blockNumber,
+      mandate: {
+        ...result.mandate,
+        maxNotionalQuote: result.mandate.maxNotionalQuote.toString(),
+        expiry: result.mandate.expiry.toString(),
+        nonce: result.mandate.nonce.toString(),
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ error: extractRevert(error) });
+  }
+});
 
 export const boot = () => {
   app.listen(CONFIG.port, () => {

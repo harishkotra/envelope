@@ -278,6 +278,36 @@ describe('Envelope — risk mandate + hash-chained ledger on an HSK Chain fork',
     await expect(envelope.setMandate(m, sig)).to.be.revertedWithCustomError(envelope, 'StaleNonce');
   });
 
+  it('hands ownership to a human wallet and locks the deployer out', async () => {
+    const [, , human] = await ethers.getSigners();
+    const humanAddr = await human.getAddress();
+
+    await expect(envelope.transferOwnership(humanAddr))
+      .to.emit(envelope, 'OwnershipTransferred')
+      .withArgs(ownerAddr, humanAddr);
+    expect(await envelope.owner()).to.equal(humanAddr);
+    expect(await envelope.active()).to.equal(false);
+
+    // the old owner's signature is no longer good enough
+    const stale = mintMandate({ nonce: 20n });
+    await expect(envelope.setMandate(stale, await signMandate(stale))).to.be.revertedWithCustomError(
+      envelope,
+      'InvalidSigner'
+    );
+
+    // the human wallet can install one, and anyone can relay it
+    const fresh = mintMandate({ nonce: 20n });
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+    const humanSig = await human.signTypedData(
+      { name: DOMAIN_NAME, version: DOMAIN_VERSION, chainId, verifyingContract: envelope.target },
+      MANDATE_TYPES,
+      fresh
+    );
+    await envelope.connect(executor).setMandate(fresh, humanSig);
+    expect(await envelope.active()).to.equal(true);
+    expect((await envelope.state())[1]).to.equal(20n);
+  });
+
   it('keeps the ledger chain verifiable link by link', async () => {
     const count = Number(await ledger.count());
     expect(count).to.be.greaterThan(0);

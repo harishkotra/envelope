@@ -69,10 +69,12 @@ scripts/     demo.sh, wallet generator, introspection
 ```bash
 cp .env.example .env      # add PARTICLE_API_KEY, then: pnpm wallet
 pnpm install
-bash scripts/demo.sh      # chain + deploy + agent + desk
+bash scripts/demo.sh      # local chain + deploy + agent + desk
 ```
 
 Desk on `http://localhost:5199`, agent API on `http://127.0.0.1:8788`.
+
+To run against the live testnet instead of a local chain, set `NETWORK=testnet`, `CHAIN_ID=133`, `RPC_URL=https://testnet.hsk.xyz` in `.env` and start the agent and desk without the local chain step.
 
 Three things to try:
 
@@ -80,9 +82,45 @@ Three things to try:
 2. **Ask for 4× the mandate.** A real oversized order is submitted. The chain rejects it with `NotionalExceeded`.
 3. **Type a change.** "be more aggressive, 8 trades an hour." The model proposes a mandate patch; signing it is a separate, explicit act.
 
-## Contracts
+## Deployments
 
-Local demo deployment (fresh chain each run, so addresses change):
+**HSK Chain testnet (chainId 133)** — live, all addresses on chain.
+
+```
+Envelope  0x7b67AAd8eB08eF74EFe101325600B16dc5f95FFa
+Trader    0xECf9c42e8beFB1b9508B9430D536BB369F7F9246
+Ledger    0xD41eF582Cf592D7B67803864c271519fCbF620ac
+Pool      0xA92D72d226cb655C1D25bDf2690d5E3D9Be26da6   (WHSK/dUSD)
+Venue     0x048475cf2731ff2c032c7938d3e358eeeb6cc4a4
+```
+
+Explorer: `https://testnet-explorer.hsk.xyz/address/<address>`
+
+The testnet has no HSKSwap deployment and no WHSK, so `scripts/deploy-testnet.ts` ships a self-contained venue (MiniDEX) and two test tokens, then the protocol on top. Every migration detail is the same as mainnet: the trader talks to a router, the envelope reads pair reserves.
+
+**HSK Chain mainnet (chainId 177)** — `contracts/scripts/deploy.ts` points at the real HSKSwap router `0x569a9C081F8Eb11215B86723976C4b404DfF4439` and factory `0x75e5da970b546e214650ae2d3b6e7918db344119`. Run with `DRY_RUN=1` first to validate config, then for real. Mainnet gas is ~0.02 gwei, so a full deploy costs about 0.00014 HSK.
+
+## Wallet ownership
+
+The envelope owner is whoever can install a mandate. To hand it to a human wallet:
+
+```bash
+HANDOFF_TO=0xYourWallet pnpm --filter @envelope/contracts handoff
+```
+
+After that the deployer and the agent key are locked out, and the desk's **Connect wallet** button signs mandates with `eth_signTypedData_v4` through `setMandate`, which accepts any relayer as long as the owner's signature checks out. The agent keeps the ability to propose a mandate and loses the ability to grant one.
+
+## Quirks of the HSK testnet RPC
+
+Discovered while deploying, and worked around in code so the demo does not depend on them:
+
+- **Reads lag writes by a few blocks.** A `view` call straight after a transaction can return pre-transaction state. The deploy script takes the pair address from the `PairCreated` event rather than reading it back, and polls for mandate activation.
+- **`eth_estimateGas` under-reports for deploys and for calls that deploy a contract** (`createPair` was estimated at 23k gas). Every transaction sets an explicit gas ceiling.
+- **Type-2 transactions are rejected** with "replacement transaction underpriced" even with a clean nonce. All writes use a legacy `gasPrice` of 2 gwei.
+
+## Contracts (local demo)
+
+The local demo deploys a fresh chain each run, so addresses change:
 
 ```
 Envelope  0x12f267D0440770A0833FEd823153f1A26F55EDd6
@@ -91,19 +129,18 @@ Ledger    0x3B3665a5467059f5A9F3948efE328FaD936C357a
 Pool      0xF176c4643bE02aFb454F87690496B1749FcdDbAA
 ```
 
-Mainnet deployment uses `contracts/scripts/deploy.ts` against the real HSKSwap router `0x569a9C081F8Eb11215B86723976C4b404DfF4439` and factory `0x75e5da970b546e214650ae2d3b6e7918db344119` (chain 177), and writes `contracts/deployments/hsk.json`.
-
 ## Tests
 
 ```bash
 pnpm --filter @envelope/contracts test
 ```
 
-Twelve tests run against a forked snapshot of HSK Chain mainnet, seeding a pair through the live HSKSwap factory and router, then proving each limit: wrong-key signature, position ceiling, notional ceiling, rate limit, expiry, non-executor, slippage band, nonce replay, and a full ledger walk that recomputes every link back to the zero hash.
+Thirteen tests run against a forked snapshot of HSK Chain mainnet, seeding a pair through the live HSKSwap factory and router, then proving each limit: wrong-key signature, position ceiling, notional ceiling, rate limit, expiry, non-executor, slippage band, nonce replay, ownership handoff, and a full ledger walk that recomputes every link back to the zero hash.
 
 ## Honest limitations
 
 - **The venue is thin.** HSKSwap's live factory holds three pairs, and the only funded one holds about one cent of liquidity. A taker agent has nothing to trade, so the demo deploys its own pool and seeds it. On mainnet the same contracts point at the real HSKSwap router; the pool is seeded from the deployer wallet.
+- **Mainnet deployment is not done yet.** The testnet deployment is live and complete. The mainnet run needs a funded deployer and is a single command, but it has not been executed, so do not claim it has.
 - **Flow is synthetic in the demo.** `NOISE_TRADER=true` makes small real swaps so the pool actually moves and the agent has something to react to. Every record that came from it is still a real on-chain action.
 - **The owner key is server-side in this build** so the demo can sign without a wallet popup. In production the mandate signature moves to `eip1193` and the key never leaves the wallet; the contract already supports it.
 - **HSP is not used here.** This is a Track 1 submission. The mandate object is deliberately shaped so the same envelope can be expressed as an HSP mandate if the desk is extended to Track 2.

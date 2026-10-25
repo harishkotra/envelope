@@ -1,7 +1,7 @@
 import { decodeErrorResult, type Address, type Hex } from 'viem';
 import { envelopeAbi, traderAbi } from './abi.js';
 import { CONFIG, DEPLOYMENT } from './config.js';
-import { executor, owner, publicClient, ownerAddress, executorAddress } from './chain.js';
+import { executor, owner, publicClient, ownerAddress, executorAddress, FEE } from './chain.js';
 
 export type Mandate = {
   account: Address;
@@ -106,11 +106,9 @@ export type MandatePatch = Partial<Pick<Mandate, 'maxPositionBps' | 'maxDailyLos
 };
 
 /** Re-sign and install a mandate. In production this call is made by a wallet (eip1193). */
-export const applyMandate = async (patch: MandatePatch) => {
+export const buildNextMandate = async (patch: MandatePatch): Promise<Mandate> => {
   const current = await readMandate();
-  const block = await publicClient.getBlock();
-
-  const next: Mandate = {
+  return {
     account: current.account,
     executor: current.executor,
     pair: current.pair,
@@ -124,6 +122,58 @@ export const applyMandate = async (patch: MandatePatch) => {
     expiry: BigInt(Math.floor(Date.now() / 1000) + (patch.days ?? 14) * 86_400),
     nonce: current.nonce + 1n,
   };
+};
+
+export const readOwner = async (): Promise<Address> => {
+  return (await publicClient.readContract({ address: ENVELOPE, abi: envelopeAbi, functionName: 'owner' })) as Address;
+};
+
+/** Everything a browser wallet needs to sign EIP-712 typed data. */
+export const typedDataFor = (mandate: Mandate) => ({
+  domain: {
+    name: 'Envelope',
+    version: '1',
+    chainId: CONFIG.chainId,
+    verifyingContract: ENVELOPE,
+  },
+  types: MANDATE_TYPES,
+  primaryType: 'Mandate',
+  message: {
+    ...mandate,
+    maxNotionalQuote: mandate.maxNotionalQuote.toString(),
+    expiry: mandate.expiry.toString(),
+    nonce: mandate.nonce.toString(),
+  },
+});
+
+/**
+ * Prepare a mandate for a human wallet to sign. Nothing is installed here:
+ * the signature comes back from the browser and is relayed by `submitMandate`.
+ */
+export const prepareMandate = async (patch: MandatePatch) => {
+  const mandate = await buildNextMandate(patch);
+  const ownerAddress = await readOwner();
+  return { mandate, typedData: typedDataFor(mandate), owner: ownerAddress };
+};
+
+/** Relay an owner-signed mandate. Anyone may send this; only the signature is trusted. */
+export const submitMandate = async (mandate: Mandate, signature: Hex) => {
+  const hash = await executor.writeContract({
+    address: ENVELOPE,
+    abi: envelopeAbi,
+    functionName: 'setMandate',
+    args: [mandate as any, signature],
+    chain: null,
+    account: executor.account!,
+    gas: 600_000n,
+    ...FEE,
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return { mandate, txHash: hash, blockNumber: Number(receipt.blockNumber) };
+};
+
+export const applyMandate = async (patch: MandatePatch) => {
+  const next = await buildNextMandate(patch);
 
   const signature = await owner.signTypedData({
     domain: {
@@ -144,6 +194,8 @@ export const applyMandate = async (patch: MandatePatch) => {
     args: [next as any, signature],
     chain: null,
     account: owner.account!,
+    gas: 600_000n,
+    ...FEE,
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   return { mandate: next, txHash: hash, blockNumber: Number(receipt.blockNumber), signer: ownerAddress };
@@ -164,7 +216,7 @@ export const trade = async (intent: Intent, decisionHash: Hex, opts: { simulate:
       args: [{ ...intent, deadline }, decisionHash],
       account: executor.account!,
     });
-    const hash = await executor.writeContract({ ...request, chain: null });
+    const hash = await executor.writeContract({ ...request, chain: null, gas: 600_000n, ...FEE } as any);
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     return { hash, receipt, simulated: true as const };
   }
@@ -176,8 +228,29 @@ export const trade = async (intent: Intent, decisionHash: Hex, opts: { simulate:
     args: [{ ...intent, deadline }, decisionHash],
     chain: null,
     account: executor.account!,
+    gas: 600_000n,
+    ...FEE,
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+  // A mined-but-reverted transaction does not throw, so a refusal has to be read from the
+  // receipt. The revert data is not retained, so replay the call to recover the named
+  // error the envelope raised.
+  if (receipt.status !== 'success') {
+    try {
+      await publicClient.simulateContract({
+        address: TRADER,
+        abi: traderAbi,
+        functionName: 'trade',
+        args: [{ ...intent, deadline }, decisionHash],
+        account: executor.account!,
+      });
+    } catch (simulated) {
+      throw simulated;
+    }
+    throw new Error(`trade reverted on chain in ${hash}`);
+  }
+
   return { hash, receipt, simulated: false as const };
 };
 
@@ -190,6 +263,8 @@ export const refuse = async (decisionHash: Hex, reason: string) => {
     args: [decisionHash, reasonCode],
     chain: null,
     account: executor.account!,
+    gas: 300_000n,
+    ...FEE,
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   return { hash, receipt };

@@ -1,6 +1,6 @@
 import { parseAbi, type Address } from 'viem';
 import { DEPLOYMENT } from './config.js';
-import { owner, publicClient } from './chain.js';
+import { owner, publicClient, FEE } from './chain.js';
 
 /**
  * Demo flow generator.
@@ -44,6 +44,8 @@ const ensureApprovals = async () => {
         args: [router, 10n ** 30n],
         chain: null,
         account: owner.account!,
+        gas: 200_000n,
+        ...FEE,
       });
       await publicClient.waitForTransactionReceipt({ hash });
     }
@@ -72,6 +74,8 @@ export const nudge = async (): Promise<{ direction: 'into-base' | 'into-quote'; 
     args: [amountIn, 0n, path, owner.account!.address, BigInt(Math.floor(Date.now() / 1000) + 120)],
     chain: null,
     account: owner.account!,
+    gas: 500_000n,
+    ...FEE,
   });
   await publicClient.waitForTransactionReceipt({ hash });
 

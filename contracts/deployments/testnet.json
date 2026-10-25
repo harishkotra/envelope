@@ -1,0 +1,20 @@
+{
+  "network": "testnet",
+  "chainId": 133,
+  "router": "0x048475cf2731ff2c032c7938d3e358eeeb6cc4a4",
+  "factory": "0x048475cf2731ff2c032c7938d3e358eeeb6cc4a4",
+  "pair": "0xA92D72d226cb655C1D25bDf2690d5E3D9Be26da6",
+  "baseToken": "0xf0F96c100e7A218aCFF1A6b3d069e288a3fa7269",
+  "quoteToken": "0x0741DE74e8A69dB4B5Ef569e6f0d88812cA0672d",
+  "baseSymbol": "WHSK",
+  "quoteSymbol": "dUSD",
+  "baseDecimals": 18,
+  "quoteDecimals": 6,
+  "envelope": "0x7b67AAd8eB08eF74EFe101325600B16dc5f95FFa",
+  "ledger": "0xD41eF582Cf592D7B67803864c271519fCbF620ac",
+  "trader": "0xECf9c42e8beFB1b9508B9430D536BB369F7F9246",
+  "baseIsToken0": false,
+  "mandateInstalled": true,
+  "owner": "0x696e224Ff058656cF337c72eeDCF7C2b24aD96Ce",
+  "seededAt": "2026-10-25T21:12:00.000Z"
+}

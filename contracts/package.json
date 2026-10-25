@@ -9,7 +9,9 @@
     "deploy:fork": "hardhat run scripts/deploy.ts --network fork",
     "deploy:mainnet": "hardhat run scripts/deploy.ts --network hsk",
     "node": "hardhat node",
-    "deploy:local": "hardhat run scripts/deploy-local.ts --network fork"
+    "deploy:local": "hardhat run scripts/deploy-local.ts --network fork",
+    "deploy:testnet": "hardhat run scripts/deploy-testnet.ts --network hsktest",
+    "handoff": "hardhat run scripts/handoff-owner.ts --network hsktest"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

@@ -114,6 +114,11 @@ export const runCycle = async (
     const isBuy = proposal.action === 'BUY';
     const early = proposal.action === 'HOLD' || amountInQuote <= 0;
 
+    // The model call takes seconds and the pool can move inside it, so the slippage
+    // floor is quoted against reserves read immediately before sizing, not the snapshot
+    // the model reasoned about.
+    const fresh = early ? null : await readPosition();
+
     // convert to base units for a SELL
     const amountIn = early
       ? 0n
@@ -128,8 +133,10 @@ export const runCycle = async (
     // trips the band on a rounding artefact.
     let minAmountOut = 0n;
     if (!early) {
-      const rIn = isBuy ? position.quoteReserve : position.baseReserve;
-      const rOut = isBuy ? position.baseReserve : position.quoteReserve;
+      const rawQuote = fresh?.quoteReserve ?? position.quoteReserve;
+      const rawBase = fresh?.baseReserve ?? position.baseReserve;
+      const rIn = isBuy ? rawQuote : rawBase;
+      const rOut = isBuy ? rawBase : rawQuote;
       const inFee = amountIn * 997n;
       const expectedRaw = rIn > 0n && rOut > 0n ? (inFee * rOut) / (rIn * 1000n + inFee) : 0n;
       const floorRaw = (expectedRaw * BigInt(10_000 - limits.maxSlippageBps)) / 10_000n;

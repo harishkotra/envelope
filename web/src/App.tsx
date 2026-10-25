@@ -3,10 +3,18 @@ import {
   applyMandate,
   breakEnvelope,
   chat,
+  connectWallet,
   getState,
   getVerify,
+  getWallet,
+  injected,
+  prepareMandate,
   setRunning,
+  signTypedData,
+  submitMandate,
+  switchToChain,
   tick,
+  walletChainId,
   type Record as Decision,
   type State,
   type VerifyResult,
@@ -37,7 +45,12 @@ export default function App() {
   const [chatReply, setChatReply] = useState<{ reply: string; patch: any } | null>(null);
   const [toast, setToast] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null);
   const [showReasoning, setShowReasoning] = useState(false);
+  const [wallet, setWallet] = useState<string | null>(null);
+  const [owner, setOwner] = useState<string | null>(null);
+  const [walletChain, setWalletChain] = useState<number | null>(null);
   const toastTimer = useRef<number | null>(null);
+
+  const walletIsOwner = !!wallet && !!owner && wallet.toLowerCase() === owner.toLowerCase();
 
   const flash = (tone: 'ok' | 'danger', text: string) => {
     setToast({ tone, text });
@@ -66,6 +79,59 @@ export default function App() {
   useEffect(() => {
     if (state?.records?.length && !selected) setSelected(state.records[0]);
   }, [state, selected]);
+
+  // who may sign the mandate, and whether the wallet agrees with the desk about the chain
+  useEffect(() => {
+    getWallet()
+      .then((info) => setOwner(info.owner))
+      .catch(() => undefined);
+
+    const provider = injected();
+    if (!provider) return;
+
+    provider
+      .request({ method: 'eth_accounts' })
+      .then(async (accounts) => {
+        const list = (accounts as string[]) ?? [];
+        if (list.length) {
+          setWallet(list[0]);
+          setWalletChain(await walletChainId().catch(() => null));
+        }
+      })
+      .catch(() => undefined);
+
+    provider.on?.('accountsChanged', (accounts) => {
+      const list = (accounts as string[]) ?? [];
+      setWallet(list[0] ?? null);
+    });
+    provider.on?.('chainChanged', (chain) => setWalletChain(Number.parseInt(String(chain), 16)));
+  }, []);
+
+  const connect = async () => {
+    setBusy('wallet');
+    try {
+      const account = await connectWallet();
+      setWallet(account);
+      const info = await getWallet();
+      setOwner(info.owner);
+      const chain = await walletChainId();
+      setWalletChain(chain);
+      if (chain !== info.chainId) {
+        await switchToChain(info.chainId);
+        setWalletChain(info.chainId);
+      }
+      flash(
+        'ok',
+        account.toLowerCase() === info.owner.toLowerCase()
+          ? 'Wallet connected. This address owns the envelope.'
+          : 'Wallet connected, but this address is not the envelope owner.'
+      );
+    } catch (error) {
+      flash('danger', (error as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const runTick = async () => {
     setBusy('tick');
@@ -119,11 +185,21 @@ export default function App() {
     if (!chatReply) return;
     setBusy('sign');
     try {
-      const result = await applyMandate(chatReply.patch);
-      await refresh();
-      setChatReply(null);
-      setMessage('');
-      flash('ok', `Mandate v${result.mandate?.nonce} signed and installed`);
+      if (wallet && walletIsOwner) {
+        const prepared = await prepareMandate(chatReply.patch);
+        const signature = await signTypedData(wallet, prepared.typedData);
+        const result = await submitMandate(prepared.mandate, signature);
+        await refresh();
+        setChatReply(null);
+        setMessage('');
+        flash('ok', `Mandate v${result.mandate?.nonce} signed by your wallet and installed`);
+      } else {
+        const result = await applyMandate(chatReply.patch);
+        await refresh();
+        setChatReply(null);
+        setMessage('');
+        flash('ok', `Mandate v${result.mandate?.nonce} signed and installed`);
+      }
     } catch (error) {
       flash('danger', (error as Error).message);
     } finally {
@@ -189,6 +265,18 @@ export default function App() {
           <Chip tone={verified ? 'ok' : 'danger'}>
             {verified ? `chain verified · ${ledger.count} links` : 'chain unverified'}
           </Chip>
+          {!wallet ? (
+            <button className="btn" onClick={connect} disabled={busy === 'wallet'}>
+              {busy === 'wallet' ? 'Connecting…' : 'Connect wallet'}
+            </button>
+          ) : (
+            <Chip tone={walletIsOwner ? 'ok' : 'warn'}>
+              {walletIsOwner ? `owner ${short(wallet, 4, 4)}` : `wallet ${short(wallet, 4, 4)} · not owner`}
+            </Chip>
+          )}
+          {wallet && walletChain != null && walletChain !== deployment.chainId ? (
+            <Chip tone="danger">wrong network</Chip>
+          ) : null}
           <span className="mandate-nonce mono">mandate v{mandate.nonce}</span>
           <button className={`btn ${agent.running ? 'btn-live' : ''}`} onClick={toggleRun} disabled={busy === 'run'}>
             <span className={`dot ${agent.running ? 'on' : ''}`} />
@@ -258,6 +346,10 @@ export default function App() {
                 <span>Desk contract</span>
                 <b className="mono">{short(deployment.trader, 6, 4)}</b>
               </div>
+              <div>
+                <span>Owner of record</span>
+                <b className="mono">{owner ? short(owner, 6, 4) : '—'}</b>
+              </div>
             </div>
 
             <button className="btn btn-danger wide" onClick={runBreak} disabled={busy === 'break'}>
@@ -296,9 +388,17 @@ export default function App() {
                 <p>{chatReply.reply}</p>
                 <pre className="mono">{JSON.stringify(chatReply.patch, null, 1)}</pre>
                 <button className="btn btn-accent wide" onClick={signPatch} disabled={busy === 'sign'}>
-                  {busy === 'sign' ? 'Signing…' : 'Sign and install mandate'}
+                  {busy === 'sign'
+                    ? 'Signing…'
+                    : walletIsOwner
+                      ? 'Sign in wallet and install'
+                      : 'Sign and install mandate'}
                 </button>
-                <p className="fineprint">The agent cannot raise its own limits. Only a new signature can.</p>
+                <p className="fineprint">
+                  {walletIsOwner
+                    ? 'Your wallet signs the mandate. The agent can only propose it.'
+                    : 'The agent cannot raise its own limits. Only a signature can.'}
+                </p>
               </div>
             ) : null}
           </Card>

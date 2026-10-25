@@ -19,5 +19,13 @@ const ownerAccount = privateKeyToAccount(CONFIG.ownerKey);
 export const executor = createWalletClient({ account: executorAccount, chain, transport: http(CONFIG.rpcUrl) });
 export const owner = createWalletClient({ account: ownerAccount, chain, transport: http(CONFIG.rpcUrl) });
 
+/**
+ * This RPC's fee hints are unreliable (viem ends up below the 1 gwei base fee and the
+ * node answers "replacement transaction underpriced"), so every write pins its fees.
+ */
+export const FEE = {
+  gasPrice: 2_000_000_000n,
+} as const;
+
 export const executorAddress: Address = executorAccount.address;
 export const ownerAddress: Address = ownerAccount.address;

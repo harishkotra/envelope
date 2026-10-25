@@ -9,7 +9,9 @@ Demo Day: Nov 4, Mumbai. 20 finalists, roughly 12 minutes per team including han
 - [ ] The feed shows at least one `FILLED`, one `REFUSED`, and one `REVERTED`.
 - [ ] Hard refresh the page once so the sparkline has history.
 - [ ] Backup: a screen recording of the exact run, in case the venue wifi dies.
-- [ ] Mainnet deployment link open in another tab (the hackathon requires a mainnet contract).
+- [ ] MetaMask installed and switched to the chain the desk is on, so the ownership beat works live.
+- [ ] Testnet contracts open in another tab: `https://testnet-explorer.hsk.xyz/address/0x7b67AAd8eB08eF74EFe101325600B16dc5f95FFa`
+- [ ] Mainnet deployment link ready too: a mainnet contract is required to be eligible for demo selection.
 
 ## The five minutes
 
@@ -37,9 +39,9 @@ Then point at Proof of edge: "Both heads match. A broken link means someone reor
 
 **4:15 Control (30s)**
 
-Type into the console: "eight trades an hour, but keep the position cap." Click **Interpret**, then **Sign and install mandate**.
+Type into the console: "eight trades an hour, but keep the position cap." Click **Interpret**, then **Sign in wallet and install** so MetaMask asks the room for a signature.
 
-"The agent can propose a new envelope. It cannot grant one. Only a signature does that, and the nonce moves, so the old mandate dies."
+"The agent can propose a new envelope. It cannot grant one. Only a signature does that, and the nonce moves, so the old mandate dies. In this build the wallet is the owner, so my key, not the agent's, is the only thing that can move these limits."
 
 **4:45 Close (15s)**
 

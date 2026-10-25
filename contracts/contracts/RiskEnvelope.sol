@@ -63,8 +63,9 @@ contract RiskEnvelope is EIP712 {
     event MandateSet(uint64 indexed nonce, bytes32 mandateHash, address indexed executor, address indexed pair);
     event Consumed(bool isBuy, uint256 notionalQuote, uint256 tradesThisHour);
     event Settled(uint256 equity, uint256 dayStartEquity);
+    event OwnershipTransferred(address indexed from, address indexed to);
 
-    address public immutable owner;
+    address public owner;
 
     Mandate private _mandate;
     bool public active;
@@ -76,6 +77,19 @@ contract RiskEnvelope is EIP712 {
 
     constructor() EIP712("Envelope", "1") {
         owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
+    }
+
+    /**
+     * @notice Hand the envelope to a human wallet. After this, only that wallet's signature
+     *         can install a mandate; the deployer and the agent key are locked out.
+     */
+    function transferOwnership(address newOwner) external {
+        if (msg.sender != owner) revert NotOwner();
+        if (newOwner == address(0)) revert BadParams();
+        owner = newOwner;
+        active = false;
+        emit OwnershipTransferred(msg.sender, newOwner);
     }
 
     // ---------------------------------------------------------------------

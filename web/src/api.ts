@@ -118,3 +118,100 @@ export const applyMandate = (patch: unknown) =>
   fetch('/api/mandate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ patch }) }).then(json);
 export const setRunning = (run: boolean) =>
   fetch(run ? '/api/start' : '/api/stop', { method: 'POST' }).then(json);
+
+export type TypedData = {
+  domain: { name: string; version: string; chainId: number; verifyingContract: string };
+  types: { [key: string]: { name: string; type: string }[] };
+  primaryType: string;
+  message: { [key: string]: string | number };
+};
+
+export type WalletInfo = { owner: string; chainId: number; network: string; envelope: string };
+
+export const getWallet = (): Promise<WalletInfo> => fetch('/api/wallet').then(json);
+
+export const prepareMandate = (patch: unknown) =>
+  fetch('/api/mandate/prepare', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ patch }),
+  }).then(json) as Promise<{ owner: string; typedData: TypedData; mandate: { [key: string]: string | number } }>;
+
+export const submitMandate = (mandate: unknown, signature: string) =>
+  fetch('/api/mandate/submit', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mandate, signature }),
+  }).then(json);
+
+/** Minimal EIP-1193 surface. Only what the desk actually calls. */
+type Eip1193 = {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on?: (event: string, handler: (...args: unknown[]) => void) => void;
+};
+
+export const injected = (): Eip1193 | null =>
+  typeof window !== 'undefined' ? ((window as unknown as { ethereum?: Eip1193 }).ethereum ?? null) : null;
+
+export const connectWallet = async (): Promise<string> => {
+  const provider = injected();
+  if (!provider) throw new Error('No browser wallet found. Install MetaMask or Rabby.');
+  const accounts = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
+  if (!accounts?.length) throw new Error('Wallet returned no account.');
+  return accounts[0];
+};
+
+export const walletChainId = async (): Promise<number> => {
+  const provider = injected();
+  if (!provider) throw new Error('No browser wallet found.');
+  const hex = (await provider.request({ method: 'eth_chainId' })) as string;
+  return Number.parseInt(hex, 16);
+};
+
+const CHAINS: { [chainId: number]: { name: string; rpc: string; explorer: string; symbol: string } } = {
+  133: {
+    name: 'HSK Chain Testnet',
+    rpc: 'https://testnet.hsk.xyz',
+    explorer: 'https://testnet-explorer.hsk.xyz',
+    symbol: 'HSK',
+  },
+  177: {
+    name: 'HashKey Chain',
+    rpc: 'https://mainnet.hsk.xyz',
+    explorer: 'https://hashkey.blockscout.com',
+    symbol: 'HSK',
+  },
+};
+
+export const switchToChain = async (chainId: number): Promise<void> => {
+  const provider = injected();
+  if (!provider) throw new Error('No browser wallet found.');
+  const hex = `0x${chainId.toString(16)}`;
+  try {
+    await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hex }] });
+  } catch (error) {
+    const meta = CHAINS[chainId];
+    if (!meta) throw error;
+    await provider.request({
+      method: 'wallet_addEthereumChain',
+      params: [
+        {
+          chainId: hex,
+          chainName: meta.name,
+          nativeCurrency: { name: 'HSK', symbol: meta.symbol, decimals: 18 },
+          rpcUrls: [meta.rpc],
+          blockExplorerUrls: [meta.explorer],
+        },
+      ],
+    });
+  }
+};
+
+export const signTypedData = async (account: string, typedData: TypedData): Promise<string> => {
+  const provider = injected();
+  if (!provider) throw new Error('No browser wallet found.');
+  return (await provider.request({
+    method: 'eth_signTypedData_v4',
+    params: [account, JSON.stringify(typedData)],
+  })) as string;
+};

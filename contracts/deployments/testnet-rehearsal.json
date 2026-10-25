@@ -1,0 +1,20 @@
+{
+  "network": "testnet-rehearsal",
+  "chainId": 31337,
+  "router": "0x50B4c019F205ED83DA160c28d0daF6b4D4403e6C",
+  "factory": "0x50B4c019F205ED83DA160c28d0daF6b4D4403e6C",
+  "pair": "0xC8f8E470B912241E269054dE08C81568910923Ea",
+  "baseToken": "0x450e4448c9f8068397A60d936645B2Ba4c22Ffc9",
+  "quoteToken": "0x41B491daD203750B2C03595d8D45a61a35447F6c",
+  "baseSymbol": "WHSK",
+  "quoteSymbol": "dUSD",
+  "baseDecimals": 18,
+  "quoteDecimals": 6,
+  "envelope": "0x12957Ba14EF1a6F1aD9B07e84498f3bb1702c300",
+  "ledger": "0xFf4cCCe38b66cCeEce16c2dB55B92628785b5Ef6",
+  "trader": "0x7f17670F9BC81d2f5B8C2eCCEc189759d59491cB",
+  "baseIsToken0": false,
+  "mandateInstalled": true,
+  "owner": "0x696e224Ff058656cF337c72eeDCF7C2b24aD96Ce",
+  "seededAt": "2026-10-25T14:58:40.160Z"
+}

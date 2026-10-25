@@ -70,6 +70,13 @@ export const envelopeAbi = [
   },
   {
     type: 'function',
+    name: 'owner',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+  },
+  {
+    type: 'function',
     name: 'setMandate',
     stateMutability: 'nonpayable',
     inputs: [
@@ -233,6 +240,19 @@ export const traderAbi = [
     ],
   },
   { type: 'error', name: 'NotExecutor', inputs: [{ name: 'caller', type: 'address' }] },
+  {
+    type: 'error',
+    name: 'SlippageBandViolation',
+    inputs: [
+      { name: 'minAmountOut', type: 'uint256' },
+      { name: 'mandateFloor', type: 'uint256' },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'SwapFailed',
+    inputs: [],
+  },
   {
     type: 'error',
     name: 'SlippageTooHigh',
